@@ -1,0 +1,1 @@
+enum ClaimStatus { PENDING, APPROVED, REJECTED }

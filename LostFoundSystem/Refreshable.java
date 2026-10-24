@@ -1,0 +1,1 @@
+interface Refreshable { void refresh(); }

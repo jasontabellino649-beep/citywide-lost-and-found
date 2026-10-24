@@ -1,0 +1,235 @@
+classDiagram
+direction TB
+
+%% ---------- Interfaces ----------
+class Searchable {
+  <<interface>>
+  +matches(SearchFilter) boolean
+}
+class Refreshable {
+  <<interface>>
+  +refresh() void
+}
+
+%% ---------- Users (Abstraction + Inheritance + Polymorphism) ----------
+class User {
+  <<abstract>>
+  -int id
+  -String username
+  -String passwordHash
+  -String fullName
+  -String contact
+  +checkPassword(String) boolean
+  +getRole() String*
+  +canModerate() boolean*
+}
+class RegularUser {
+  +getRole() String
+  +canModerate() boolean
+}
+class Admin {
+  +getRole() String
+  +canModerate() boolean
+}
+User <|-- RegularUser
+User <|-- Admin
+
+%% ---------- Items (Abstraction + Inheritance + Polymorphism) ----------
+class Item {
+  <<abstract>>
+  -int id
+  -String name
+  -Category category
+  -String description
+  -LocalDate date
+  -LocalDate reportedOn
+  -ItemStatus status
+  +matches(SearchFilter) boolean
+  +getDetails() String
+  +getType() String*
+  +getDateLabel() String*
+  +getExtraInfo() String*
+  +getSuggestedAction() String*
+  +isClaimable() boolean*
+}
+class LostItem {
+  -String reward
+  +getType() String
+  +isClaimable() boolean
+}
+class FoundItem {
+  -String keptAt
+  +getType() String
+  +isClaimable() boolean
+}
+Item <|-- LostItem
+Item <|-- FoundItem
+Searchable <|.. Item
+
+%% ---------- Supporting domain classes ----------
+class Location {
+  -District district
+  -String place
+}
+class Claim {
+  -int id
+  -String proof
+  -ClaimStatus status
+  -String adminNote
+  +review(boolean, String) void
+}
+class Message {
+  -int id
+  -String text
+  -boolean read
+  +markRead() void
+}
+class SearchFilter {
+  -String keyword
+  -String type
+  -Category category
+  -District district
+  -ItemStatus status
+  -LocalDate from
+  -LocalDate to
+}
+class MatchResult {
+  -int score
+}
+
+%% ---------- Enums ----------
+class Category {
+  <<enumeration>>
+  ELECTRONICS
+  BAGS_WALLETS
+  DOCUMENTS
+  KEYS
+  CLOTHING
+  JEWELRY
+  PETS
+  OTHER
+}
+class District {
+  <<enumeration>>
+  DOWNTOWN
+  NORTH
+  SOUTH
+  EAST
+  WEST
+  HARBOR
+  AIRPORT
+  UNIVERSITY
+  MARKET
+  TRANSIT
+  PARKS
+  MALLS
+}
+class ItemStatus {
+  <<enumeration>>
+  OPEN
+  CLAIM_PENDING
+  CLAIMED
+  CLOSED
+}
+class ClaimStatus {
+  <<enumeration>>
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+%% ---------- Service, validation, persistence ----------
+class LostFoundService {
+  -List~User~ users
+  -List~Item~ items
+  -List~Claim~ claims
+  -List~Message~ messages
+  +register() User
+  +login() User
+  +reportLost() LostItem
+  +registerFound() FoundItem
+  +search(SearchFilter) List~Item~
+  +findMatches(Item) List~MatchResult~
+  +submitClaim() Claim
+  +reviewClaim() void
+  +sendMessage() void
+  +closeReport() void
+  +setStatus() void
+  +deleteItem() void
+}
+class Validator {
+  +requireText() String
+  +parseDate() LocalDate
+  +requireContact() String
+}
+class DataStore {
+  +load() LostFoundService
+  +save(LostFoundService) void
+}
+class ValidationException
+class AuthenticationException
+Exception <|-- ValidationException
+Exception <|-- AuthenticationException
+
+%% ---------- GUI ----------
+class LoginFrame
+class MainFrame
+class BrowsePanel
+class ReportFormPanel
+class MyActivityPanel
+class InboxPanel
+class ClaimsReviewPanel
+class StatsPanel
+class UsersPanel
+class JFrame
+class JPanel
+JFrame <|-- LoginFrame
+JFrame <|-- MainFrame
+JPanel <|-- BrowsePanel
+JPanel <|-- ReportFormPanel
+JPanel <|-- MyActivityPanel
+JPanel <|-- InboxPanel
+JPanel <|-- ClaimsReviewPanel
+JPanel <|-- StatsPanel
+JPanel <|-- UsersPanel
+Refreshable <|.. BrowsePanel
+Refreshable <|.. MyActivityPanel
+Refreshable <|.. InboxPanel
+Refreshable <|.. ClaimsReviewPanel
+Refreshable <|.. StatsPanel
+Refreshable <|.. UsersPanel
+MainFrame *-- BrowsePanel
+MainFrame *-- ReportFormPanel
+MainFrame *-- MyActivityPanel
+MainFrame *-- InboxPanel
+MainFrame *-- ClaimsReviewPanel
+MainFrame *-- StatsPanel
+MainFrame *-- UsersPanel
+LoginFrame ..> MainFrame : opens
+MainFrame ..> LostFoundService : uses
+LoginFrame ..> LostFoundService : uses
+
+%% ---------- Relationships ----------
+LostFoundService o-- User
+LostFoundService o-- Item
+LostFoundService o-- Claim
+LostFoundService o-- Message
+LostFoundService ..> Validator : validates with
+LostFoundService ..> MatchResult : creates
+LostFoundService ..> ValidationException : throws
+LostFoundService ..> AuthenticationException : throws
+DataStore ..> LostFoundService : saves / loads
+Item --> User : reportedBy
+Item --> Location
+Item --> Category
+Item --> ItemStatus
+Location --> District
+Claim --> Item
+Claim --> User : claimant
+Claim --> ClaimStatus
+Message --> User : from / to
+Message --> Item : regarding
+MatchResult --> Item
+SearchFilter ..> Category
+SearchFilter ..> District
+SearchFilter ..> ItemStatus
